@@ -12,6 +12,7 @@ my $GITHUB_TOKEN;
 my $REPO;
 my $dry_run=0;
 my @collabs = ();
+my @ghmilestones = ();
 my $sleeptime = 3;
 my $default_assignee;
 my $usermap = {};
@@ -40,6 +41,7 @@ GetOptions ("h|help" => sub { usage(0); },
             "g|generate-purls" => \$genpurls,
             "c|collaborators=s" => sub { @collabs = @{parse_json_file($_[1])} },
             "u|usermap=s" => sub { $usermap = parse_json_file($_[1]) },
+            "m|milestones=s" => sub { @ghmilestones = @{parse_json_file(shift @ARGV)} },
             "C|include-closed" => \$include_closed,
             "v|verbose" => \$verbose,
             "k|dry-run" => \$dry_run)
@@ -69,6 +71,10 @@ if ($obj->{closed_status_names}) {
     %closed_statuses = map { $_ => 1 } qw(Fixed Done WontFix Verified Duplicate Invalid);
 }
 
+my %ghmilestones = ();
+foreach (@ghmilestones) {
+    $ghmilestones{$_->{title}} = $_;
+
 #foreach my $k (keys %$obj) {
 #    print "$k\n";
 #}
@@ -92,9 +98,6 @@ foreach my $ticket (@tickets) {
     my @labels = (@default_labels,  @{$ticket->{labels}});
 
     push(@labels, map_priority($custom->{_priority}));
-    if ($milestone) {
-        push(@labels, $milestone);
-    }
 
     my $assignee = map_user($ticket->{assigned_to});
     if (!$assignee || !$collabh{$assignee}) {
@@ -146,10 +149,19 @@ foreach my $ticket (@tickets) {
         "body" => $header."\n\n".$body,
         "created_at" => cvt_time($ticket->{created_date}),    ## check
         "assignee" => $assignee,
-        #"milestone" => 1,  # todo
         "closed" => $closed,
         "labels" => \@labels,
     };
+
+    # Declare milestone if possible
+    if ($ghmilestones{$milestone}) {
+        $issue->{milestone} = $ghmilestones{$milestone}->{number};
+    }
+    # Else, use a tag
+    elsif ($milestone) {
+        push(@{$issue->{labels}}, $milestone);
+    }
+
     my @comments = ();
     foreach my $post (@{$ticket->{discussion_thread}->{posts}}) {
         my $commenter = map_user($post->{author});
@@ -261,7 +273,7 @@ sub usage($) {
     my $sn = scriptname();
 
     print <<EOM;
-$sn [-h] [-u USERMAP] [-c COLLABINFO] [-r REPO] [-t OAUTH_TOKEN] [-a USERNAME] [-l LABEL]* [-s SF_TRACKER] [--dry-run] TICKETS-JSON-FILE
+$sn [-h] [-u USERMAP] [-m MILESTONES] [-c COLLABINFO] [-r REPO] [-t OAUTH_TOKEN] [-a USERNAME] [-l LABEL]* [-s SF_TRACKER] [--dry-run] TICKETS-JSON-FILE
 
 Migrates tickets from sourceforge to github, using new v3 GH API, documented here: https://gist.github.com/jonmagic/5282384165e0f86ef105
 
@@ -298,6 +310,11 @@ ARGUMENTS:
    -u | --usermap USERMAP-JSON-FILE *RECOMMENDED*
                   Maps SF usernames to GH
                   Example: https://github.com/geneontology/go-site/blob/master/metadata/users_sf2gh.json
+
+   -m | --milestones MILESTONES-JSON-FILE/
+                 If provided, link ticket to proper milestone. It not, milestone will be declared as a ticket label.
+                 Generate like this:
+                 curl -H "Authorization: token TOKEN" https://api.github.com/repos/cmungall/sf-test/milestones?state=all > milestones.json
 
    -a | --assignee  USERNAME *REQUIRED*
                  Default username to assign tickets to if there is no mapping for the original SF assignee in usermap
