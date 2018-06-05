@@ -273,21 +273,28 @@ sub usage($) {
     my $sn = scriptname();
 
     print <<EOM;
-$sn [-h] [-u USERMAP] [-m MILESTONES] [-c COLLABINFO] [-r REPO] [-t OAUTH_TOKEN] [-a USERNAME] [-l LABEL]* [-s SF_TRACKER] [--dry-run] TICKETS-JSON-FILE
+$sn [-h] [-u USERMAP] [-m MILESTONES] [-c COLLABINFO]
+    [-r REPO] [-t OAUTH_TOKEN] [-a USERNAME] [-l LABEL]*
+    [-s SF_TRACKER] [--dry-run] TICKETS-JSON-FILE
 
-Migrates tickets from sourceforge to github, using new v3 GH API, documented here: https://gist.github.com/jonmagic/5282384165e0f86ef105
+Migrates tickets from sourceforge to github, using new v3 GH API,
+documented here: https://gist.github.com/jonmagic/5282384165e0f86ef105
 
 Requirements:
 
- * This assumes that you have exported your tickets from SF. E.g. from a page like this: https://sourceforge.net/p/obo/admin/export
- * You have a github account and have created an OAuth token here: https://github.com/settings/tokens
+ * This assumes that you have exported your tickets from SF.
+   E.g. from a page like this: https://sourceforge.net/p/obo/admin/export
+ * You have a github account and have created an OAuth token here:
+   https://github.com/settings/tokens
 
 Example Usage:
 
-curl -H "Authorization: token TOKEN" https://api.github.com/repos/obophenotype/cell-ontology/collaborators > cell-collab.json
-gosf2github.pl -a cmungall -u users_sf2gh.json -c cell-collab.json -r obophenotype/cell-ontology -t YOUR-TOKEN-HERE cell-ontology-sf-export.json 
-
-
+curl -H "Authorization: token TOKEN" \
+     https://api.github.com/repos/obophenotype/cell-ontology/collaborators \
+     > cell-collab.json
+gosf2github.pl -a cmungall -u users_sf2gh.json -c cell-collab.json \
+               -r obophenotype/cell-ontology -t YOUR-TOKEN-HERE \
+               cell-ontology-sf-export.json
 
 ARGUMENTS:
 
@@ -300,34 +307,46 @@ ARGUMENTS:
 
    -t | --token  TOKEN *REQUIRED*
                  OAuth token. Get one here: https://github.com/settings/tokens
-                 Note that all tickets and issues will appear to originate from the user that generates the token.
-                 Important: make sure the token has the public_repo scope.
+                 Note that all tickets and issues will appear to originate
+                 from the user that generates the token.  Important: make sure
+                 the token has the public_repo scope.
 
    -l | --label  LABEL
-                 Add this label to all tickets, in addition to defaults and auto-added.
-                 Currently the following labels are ALWAYS added: auto-migrated, a priority label (unless priority=5), a label for every SF label, a label for the milestone
+                 Add this label to all tickets, in addition to defaults and
+                 auto-added.  Currently the following labels are ALWAYS added:
+                 auto-migrated, a priority label (unless priority=5), a label
+                 for every SF label, a label for the milestone
 
    -u | --usermap USERMAP-JSON-FILE *RECOMMENDED*
-                  Maps SF usernames to GH
-                  Example: https://github.com/geneontology/go-site/blob/master/metadata/users_sf2gh.json
+                  Maps SF usernames to GH Example:
+                  https://github.com/geneontology/go-site/blob/master/metadata/users_sf2gh.json
 
    -m | --milestones MILESTONES-JSON-FILE/
-                 If provided, link ticket to proper milestone. It not, milestone will be declared as a ticket label.
+                 If provided, link ticket to proper milestone. It not,
+                 milestone will be declared as a ticket label.
                  Generate like this:
-                 curl -H "Authorization: token TOKEN" https://api.github.com/repos/cmungall/sf-test/milestones?state=all > milestones.json
+                 curl -H "Authorization: token TOKEN" \
+                      https://api.github.com/repos/cmungall/sf-test/milestones?state=all \
+                      > milestones.json
 
    -a | --assignee  USERNAME *REQUIRED*
-                 Default username to assign tickets to if there is no mapping for the original SF assignee in usermap
+                 Default username to assign tickets to if there is no mapping
+                 for the original SF assignee in usermap
 
    -c | --collaborators COLLAB-JSON-FILE *REQUIRED*
                   Required, as it is impossible to assign to a non-collaborator
                   Generate like this:
-                  curl -H "Authorization: token TOKEN" https://api.github.com/repos/cmungall/sf-test/collaborators > sf-test-collab.json
+                  curl -H "Authorization: token TOKEN" \
+                       https://api.github.com/repos/cmungall/sf-test/collaborators \
+                       > sf-test-collab.json
 
    -i | --initial-ticket  NUMBER
-                 Start the import from (sourceforge) ticket number NUM. This can be useful for resuming a previously stopped or failed import.
-                 For example, if you have already imported 1-100, then the next github number assigned will be 101 (this cannot be controlled).
-                 You will need to run the script again with argument: -i 101
+                 Start the import from (sourceforge) ticket number NUM.  This
+                 can be useful for resuming a previously stopped or failed
+                 import.  For example, if you have already imported 1-100, then
+                 the next github number assigned will be 101 (this cannot be
+                 controlled). You will need to run the script again with
+                 argument: -i 101
 
    -C | --include-closed
                  By default, closed issues are not imported.
@@ -335,21 +354,29 @@ ARGUMENTS:
 
    -s | --sf-tracker  NAME
                  E.g. obo/mouse-anatomy-requests
-                 If specified, will append the original URL to the body of the new issue. E.g. https://sourceforge.net/p/obo/mouse-anatomy-requests/90
+                 If specified, will append the original URL to the body of the
+                 new issue. E.g.:
+                 https://sourceforge.net/p/obo/mouse-anatomy-requests/90
 
    -v | --verbose
-                 If specified, enables verbose output. That, for instance, includes dumping of requests to GitHub to console for debugging purposes
+                 If specified, enables verbose output. That, for instance,
+                 includes dumping of requests to GitHub to console for
+                 debugging purposes
 
    --generate-purls
-                 OBO Ontologies only: converts each ID of the form `FOO:nnnnnnn` into a PURL.
-                 If this means nothing to you, the option is not intended for you. You can safely ignore it.
+                 OBO Ontologies only: converts each ID of the form
+                 `FOO:nnnnnnn` into a PURL. If this means nothing to you,
+                 the option is not intended for you. You can safely ignore it.
 
 NOTES:
 
- * uses a pre-release API documented here: https://gist.github.com/jonmagic/5282384165e0f86ef105
+ * uses a pre-release API documented here:
+   https://gist.github.com/jonmagic/5282384165e0f86ef105
  * milestones are converted to labels
- * all issues and comments will appear to have originated from the user who issues the OAth ticket
- * NEVER RUN TWO PROCESSES OF THIS SCRIPT IN THE SAME DIRECTORY - see notes on json hack below
+ * all issues and comments will appear to have originated from the user who
+   issues the OAth ticket
+ * NEVER RUN TWO PROCESSES OF THIS SCRIPT IN THE SAME DIRECTORY - see notes
+   on json hack below
 
 HOW IT WORKS:
 
@@ -358,7 +385,8 @@ ticket, it prepares an API post request to the new GitHub API and
 posts it using LWP.
 
 The script will then sleep for 3s before continuing on to the next ticket.
- * all issues and comments will appear to have originated from the user who issues the OAuth token
+ * all issues and comments will appear to have originated from the user who
+   issues the OAuth token
 
 TIP:
 
